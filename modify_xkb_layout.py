@@ -82,7 +82,6 @@ if __name__ == '__main__':
         'AC01': ('a', 'A', 'aring', 'Aring'),
         'AC02': ('o', 'O', 'odiaeresis', 'Odiaeresis'),
         'AC03': ('e', 'E', 'adiaeresis', 'Adiaeresis'),
-        'AC04': ('fulo', 'Fulo'),
         'LSGT': ('dead_diaeresis', 'dead_abovering'),
         'CAPS': ('Escape',),
     }
