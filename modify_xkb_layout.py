@@ -38,24 +38,6 @@ def filter_lines(layout_name, lines, **edits):
                 keycode,
                 ', '.join(keybindings))
 
-    # matches strings like "  key <AC01> { [ a, A ] };"
-    rx_key_definition = re.compile(r'(\s*)(key\s*<\s*)([^\s>]*)')
-    indentation = '' 
-    def filter_line(line):
-        ''' If the line defines a keybinding in 'edits' a keybinding based on
-        the value in edits is used, otherwise the line is returned as is. The
-        value is removed from edits in the process.
-
-        '''
-
-        nonlocal indentation
-        rx_search = rx_key_definition.search(line)
-        if rx_search:
-            indentation, _, keycode = rx_search.groups()
-            if keycode in edits:
-                return to_xkb_line(keycode, edits.pop(keycode), indentation)
-        return line
-    
     #matches strings like 'xkb_symbols "dvorak" {'
     rx_start_of_layout = re.compile(r'\s*xkb_symbols\s*"{}"'.format(
         layout_name))
@@ -65,11 +47,20 @@ def filter_lines(layout_name, lines, **edits):
         yield line
         line = next(lines)
 
+    indentation = '' 
     #matches string like "};"
     rx_end_of_layout = re.compile(r'^[^{]*}\s*;\s')
+    # matches strings like "  key <AC01> { [ a, A ] };"
+    rx_key_definition = re.compile(r'(\s*)(key\s*<\s*)([^\s>]*)')
     # Filter each line within the target layout
     while not rx_end_of_layout.search(line):
-        yield filter_line(line)
+        keycode = None
+        rx_search = rx_key_definition.search(line)
+        if rx_search:
+            indentation, _, keycode = rx_search.groups()
+        yield to_xkb_line(keycode, edits.pop(keycode), indentation) \
+                if keycode and keycode in edits \
+                else line
         line = next(lines)
 
     # When at the end of the layout definition yield all the keyboard
@@ -91,6 +82,7 @@ if __name__ == '__main__':
         'AC01': ('a', 'A', 'aring', 'Aring'),
         'AC02': ('o', 'O', 'odiaeresis', 'Odiaeresis'),
         'AC03': ('e', 'E', 'adiaeresis', 'Adiaeresis'),
+        'AC04': ('fulo', 'Fulo'),
         'LSGT': ('dead_diaeresis', 'dead_abovering'),
         'CAPS': ('Escape',),
     }
