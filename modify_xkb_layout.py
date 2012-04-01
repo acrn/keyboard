@@ -20,10 +20,7 @@ def filter_lines(layout_name, lines, **edits):
              Example AC01=('a', 'A', 'aring', 'Aring')
     '''
 
-    def to_xkb_line(
-            keycode,
-            keybindings,
-            indentation='  '):
+    def to_xkb_line(keycode, keybindings, indentation='  '):
         '''creates a string of the type:
             "  key <AC01> { [ a, A, aring, Aring ] };\n"
 
@@ -43,12 +40,6 @@ def filter_lines(layout_name, lines, **edits):
 
     # matches strings like "  key <AC01> { [ a, A ] };"
     rx_key_definition = re.compile(r'(\s*)(key\s*<\s*)([^\s>]*)')
-    #matches strings like 'xkb_symbols "dvorak" {'
-    rx_start_of_layout = re.compile(r'\s*xkb_symbols\s*"{}"'.format(
-        layout_name))
-    #matches string like "};"
-    rx_end_of_layout = re.compile(r'^[^{]*}\s*;\s')
-
     indentation = '' 
     def filter_line(line):
         ''' If the line defines a keybinding in 'edits' a keybinding based on
@@ -60,27 +51,38 @@ def filter_lines(layout_name, lines, **edits):
         nonlocal indentation
         rx_search = rx_key_definition.search(line)
         if rx_search:
-            keycode = rx_search.groups()[2]
+            indentation, _, keycode = rx_search.groups()
             if keycode in edits:
-                indentation = rx_search.groups()[0]
                 return to_xkb_line(keycode, edits.pop(keycode), indentation)
         return line
     
-    applying_filter = False
-    for line in lines:
-        if applying_filter:
-            line = filter_line(line)
-            if rx_end_of_layout.search(line):
-                # When at the end of the layout definition return all the
-                # keyboard definitions that have yet to be inserted
-                while len(edits) > 0:
-                    k, v = edits.popitem()
-                    yield to_xkb_line(k, v, indentation)
-                applying_filter=False
-        if not applying_filter:
-            if len(edits) > 0 and rx_start_of_layout.search(line):
-                applying_filter = True
+    #matches strings like 'xkb_symbols "dvorak" {'
+    rx_start_of_layout = re.compile(r'\s*xkb_symbols\s*"{}"'.format(
+        layout_name))
+    line = next(lines)
+    # Yield everything preceding the target layout unaltered
+    while not rx_start_of_layout.search(line):
         yield line
+        line = next(lines)
+
+    #matches string like "};"
+    rx_end_of_layout = re.compile(r'^[^{]*}\s*;\s')
+    # Filter each line within the target layout
+    while not rx_end_of_layout.search(line):
+        yield filter_line(line)
+        line = next(lines)
+
+    # When at the end of the layout definition yield all the keyboard
+    # definitions that have yet to be inserted
+    while len(edits) > 0:
+        keycode, keybindings = edits.popitem()
+        yield to_xkb_line(keycode, keybindings, indentation)
+
+    yield line # '};'
+
+    # Yield everything following the target layout unaltered
+    while True:
+        yield next(lines)
 
 if __name__ == '__main__':
 
