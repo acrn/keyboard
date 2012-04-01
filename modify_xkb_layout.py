@@ -52,7 +52,8 @@ def filter_lines(layout_name, lines, **edits):
     indentation = '' 
     def filter_line(line):
         ''' If the line defines a keybinding in 'edits' a keybinding based on
-        the value in edits is used, otherwise the line is returned as is
+        the value in edits is used, otherwise the line is returned as is. The
+        value is removed from edits in the process.
 
         '''
 
@@ -62,21 +63,20 @@ def filter_lines(layout_name, lines, **edits):
             keycode = rx_search.groups()[2]
             if keycode in edits:
                 indentation = rx_search.groups()[0]
-                line = to_xkb_line(
-                        keycode,
-                        edits.pop(keycode),
-                        indentation)
+                return to_xkb_line(keycode, edits.pop(keycode), indentation)
         return line
     
     applying_filter = False
     for line in lines:
-        if applying_filter and rx_end_of_layout.search(line):
-            while len(edits) > 0:
-                k, v = edits.popitem()
-                yield to_xkb_line(k, v, indentation)
-            applying_filter=False
         if applying_filter:
             line = filter_line(line)
+            if rx_end_of_layout.search(line):
+                # When at the end of the layout definition return all the
+                # keyboard definitions that have yet to be inserted
+                while len(edits) > 0:
+                    k, v = edits.popitem()
+                    yield to_xkb_line(k, v, indentation)
+                applying_filter=False
         if not applying_filter:
             if len(edits) > 0 and rx_start_of_layout.search(line):
                 applying_filter = True
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     edits = {
         'AC01': ('a', 'A', 'aring', 'Aring'),
         'AC02': ('o', 'O', 'odiaeresis', 'Odiaeresis'),
-        'AC03': ('e', 'e', 'adiaeresis', 'Adiaeresis'),
+        'AC03': ('e', 'E', 'adiaeresis', 'Adiaeresis'),
         'LSGT': ('dead_diaeresis', 'dead_abovering'),
         'CAPS': ('Escape',),
     }
