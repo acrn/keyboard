@@ -53,25 +53,24 @@ def filter_lines(layout_name, lines, **edits):
     # matches strings like "  key <AC01> { [ a, A ] };"
     rx_key_definition = re.compile(r'(\s*)(key\s*<\s*)([^\s>]*)')
     # Filter each line within the target layout
-    while not rx_end_of_layout.search(line):
+    while len(edits) > 0 and not rx_end_of_layout.search(line):
         keycode = None
         rx_search = rx_key_definition.search(line)
         if rx_search:
             indentation, _, keycode = rx_search.groups()
         yield to_xkb_line(keycode, edits.pop(keycode), indentation) \
-                if keycode and keycode in edits \
+                if keycode in edits \
                 else line
         line = next(lines)
 
     # When at the end of the layout definition yield all the keyboard
-    # definitions that have yet to be inserted
-    while len(edits) > 0:
-        keycode, keybindings = edits.popitem()
-        yield to_xkb_line(keycode, keybindings, indentation)
-
-    yield line # '};'
+    # definitions that have yet to be inserted. Sort the keys so the output
+    # stays consistent.
+    for keycode in sorted(edits.keys()):
+        yield to_xkb_line(keycode, edits.pop(keycode), indentation)
 
     # Yield everything following the target layout unaltered
+    yield line
     while True:
         yield next(lines)
 
@@ -87,9 +86,8 @@ if __name__ == '__main__':
     }
 
     import sys
-    filename = sys.argv[0]
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
+    assert len(sys.argv) < 3
+    filename = sys.argv[len(sys.argv) - 1]
     with open(filename) as _file:
         lines = _file if len(sys.argv) > 1 else sys.stdin
         for line in filter_lines(layout_name, lines, **edits):
