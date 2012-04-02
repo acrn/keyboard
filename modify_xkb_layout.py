@@ -2,7 +2,7 @@
 
 import re
 
-def filter_lines(layout_name, lines, **edits):
+def filter_lines(layout_name, lines, *appends, **edits):
 
     '''filters the lines of a symbols file and returns a generator where some
     of the keybindings have been changed or appended.
@@ -13,6 +13,8 @@ def filter_lines(layout_name, lines, **edits):
                    'xkb_symbols "dvorak" {' with a regex. If no layout matches
                    in the input no filtering is applied.
     lines -- An iterable of the input to filter.
+    appends -- Stuff to insert at the end of the layout definition. This
+               argument exists only to enable 'include "level3(ralt_switch)"
 
     Keyword arguments:
     edits -- The name of a keycode to create or replace in the output and an
@@ -69,6 +71,10 @@ def filter_lines(layout_name, lines, **edits):
     for keycode in sorted(edits.keys()):
         yield to_xkb_line(keycode, edits.pop(keycode), indentation)
 
+    # Tack on everything in appends, this is an ugly hack
+    for append in appends:
+        yield indentation + append.strip() + '\n'
+
     # Yield everything following the target layout unaltered
     yield line
     while True:
@@ -84,11 +90,14 @@ if __name__ == '__main__':
         'LSGT': ('dead_diaeresis', 'dead_abovering'),
         'CAPS': ('Escape',),
     }
+    appends = (
+        'include "level3(ralt_switch)"',
+    )
 
     import sys
     assert len(sys.argv) < 3
     filename = sys.argv[len(sys.argv) - 1]
     with open(filename) as _file:
         lines = _file if len(sys.argv) > 1 else sys.stdin
-        for line in filter_lines(layout_name, lines, **edits):
+        for line in filter_lines(layout_name, lines, *appends, **edits):
             print(line, end='')
