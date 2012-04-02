@@ -55,7 +55,7 @@ def filter_lines(layout_name, lines, *appends, **edits):
     # matches strings like "  key <AC01> { [ a, A ] };"
     rx_key_definition = re.compile(r'(\s*)(key\s*<\s*)([^\s>]*)')
     # Filter each line within the target layout
-    while len(edits) > 0 and not rx_end_of_layout.search(line):
+    while not rx_end_of_layout.search(line):
         keycode = None
         rx_search = rx_key_definition.search(line)
         if rx_search:
