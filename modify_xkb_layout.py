@@ -2,7 +2,7 @@
 
 import re
 
-def filter_lines(layout_name, lines, *appends, **edits):
+def filter_lines(layout_name, lines, appends=(), **edits):
 
     '''filters the lines of a symbols file and returns a generator where some
     of the keybindings have been changed or appended.
@@ -99,5 +99,5 @@ if __name__ == '__main__':
     filename = sys.argv[len(sys.argv) - 1]
     with open(filename) as _file:
         lines = _file if len(sys.argv) > 1 else sys.stdin
-        for line in filter_lines(layout_name, lines, *appends, **edits):
+        for line in filter_lines(layout_name, lines, appends, **edits):
             print(line, end='')
