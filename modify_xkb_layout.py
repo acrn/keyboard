@@ -87,7 +87,8 @@ if __name__ == '__main__':
         'AC01': ('a', 'A', 'aring', 'Aring'),
         'AC02': ('o', 'O', 'odiaeresis', 'Odiaeresis'),
         'AC03': ('e', 'E', 'adiaeresis', 'Adiaeresis'),
-        'LSGT': ('dead_diaeresis', 'dead_abovering'),
+        'AD10': ('l', 'L', 'dead_stroke', 'dead_acute'),
+        'LSGT': ('dead_diaeresis', 'dead_abovering', 'dead_stroke'),
         'CAPS': ('Escape',),
     }
     appends = (
